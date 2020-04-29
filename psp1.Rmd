@@ -1,0 +1,169 @@
+---
+title: "Podstawy Statystyki Praktycznej (Lista 1)"
+author: "Piotr Bocian"
+date: "22 03 2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+W niniejszym raporcie zajmujemy analizą danych pod kątem pochodzenia z rozkładu normalnego i trajektoriami statystyk.
+
+# Zadanie 1
+
+Zaczynamy od importu danych.
+```{r}
+grades<-read.table("http://www.math.uni.wroc.pl/~elsner/dydaktyka/dane/grades.txt")
+iq<-grades[,3]
+income<-read.table("http://www.math.uni.wroc.pl/~elsner/dydaktyka/dane/income.dat")
+zarobki<-income[,5]
+```
+
+## a)
+Aby sprawdzić, że dane pochodzą z rozkładu normalnego należy sprawdzić ile (procentowo) obserwacji mieści się w danym przedziale. Dla przedziału $[\bar{x} - s, \bar{x} +s]$ musi być to przynajmniej 68%. Dla przedziału $[\bar{x} - 2s, \bar{x} +2s]$, 95%, a dla $[\bar{x} - 3s, \bar{x} +3s]$ - 99.7%.  
+
+```{r}
+srednia<-mean(iq)
+odchylenie<-sd(iq)
+
+pierwszyPrzedzial<-(iq>=srednia-odchylenie & iq<=srednia+odchylenie)
+drugiPrzedzial<-(iq>=srednia-2*odchylenie & iq<=srednia+2*odchylenie)
+trzeciPrzedzial<--(iq>=srednia-3*odchylenie & iq<=srednia+3*odchylenie)
+
+length(iq[pierwszyPrzedzial])/length(iq)
+length(iq[drugiPrzedzial])/length(iq)
+length(iq[trzeciPrzedzial])/length(iq)
+
+```
+
+Jak widać, różnice pomiędzy teoretycznymi wartościami, a tymi jakie udało nam się uzyskać są małe.
+
+## b)
+```{r}
+
+qqnorm(iq)
+qqline(iq, distribution = qnorm)
+```
+\newpage
+# Zadanie 2
+
+```{r}
+qqnorm(zarobki)
+qqline(zarobki,distribution = qnorm)
+```
+
+Jak widać, dane nie pochodzą z rozkładu normalnego.
+Sprawdzimy to teraz dla transformacji zbioru danych $X$ postaci $ln(X)$. Najpierw jednak dodamy do wektora danych stałą, która wyeliminuje obserwacje ujemne.
+```{r}
+nzarobki<-zarobki+abs(min(zarobki))
+
+qqnorm(log(nzarobki), ylim=c(0,15))
+qqline(log(nzarobki),distribution = qnorm)
+```
+
+
+# Zadanie 3
+
+Najpierw obliczmy wrtości poszczególnych statystyk
+
+```{r}
+srednia<-mean(zarobki)
+mediana<-median(zarobki)
+odchylenie<-sd(zarobki)
+iqr<-IQR(zarobki)
+wyzsze<-income[,3]>4
+procent<-length(income[wyzsze,3])/length(income[,3])*100
+```
+
+```{r}
+dlugosc <- length(income[,1]) -> dlugosc
+```
+
+Tworzymy listę losowych
+Teraz powtórzymy eksperyment jeszcze 9 razy
+\newpage
+
+## Średnia
+
+```{r  echo=FALSE, fig.height= 10}
+
+par(mfrow=c(3,1))
+for(i in 1:9){
+  losowe <- sample(1:dlugosc, 1000, replace=F) -> losowe
+  income[losowe,] -> proba
+  sapply(1:1000, function(t) mean(proba$V5[1:t])) -> sred
+  plot(sred, xlab="t", ylab="srednia", main=i, type="l")
+  abline(h=srednia, col="green")
+}
+
+```
+
+## Mediana
+
+```{r, echo=FALSE}
+
+for(i in 1:10){
+  par(mfrow=c(3,1))
+  losowe <- sample(1:dlugosc, 1000, replace=F) -> losowe
+  income[losowe,] -> proba
+  sapply(1:1000, function(t) median(proba$V5[1:t])) -> med
+  plot(med, xlab="t", ylab="mediana", main=i, type="l")
+abline(h=mediana, col="green")
+}
+
+```
+
+## IQR
+
+```{r, echo=FALSE}
+for(i in 1:10){
+  losowe <- sample(1:dlugosc, 1000, replace=F) -> losowe
+  income[losowe,] -> proba
+  sapply(1:1000, function(t) IQR(proba$V5[1:t])) -> rozstep
+  plot(rozstep, xlab="t", ylab="Rozstęp", main=i, type="l")
+  abline(h=iqr, col="green")
+}
+
+```
+
+## Odchylenie
+
+```{r,echo=FALSE}
+for(i in 1:10){
+  losowe <- sample(1:dlugosc, 1000, replace=F) -> losowe
+  income[losowe,] -> proba
+  sapply(1:1000, function(t) sd(proba$V5[1:t])) -> sd
+  plot(sd, xlab="t", ylab="Odchylenie", main=i, type="l")
+  abline(h=odchylenie, col="green")
+}
+
+```
+
+## Procent
+
+```{r, echo=FALSE}
+for(i in 1:10){
+  losowe <- sample(1:dlugosc, 1000, replace=F) -> losowe
+  income[losowe,] -> proba
+  sapply(1:1000, function(t) {z = proba[1:t,];
+    length(z$V3[z$V3>4])/length(z$V3)*100}) -> proc
+  plot(proc, xlab="t", ylab="Procent", main=i, type="l")
+  abline(h=procent, col="green")
+}
+
+```
+
+## b)
+
+```{r}
+matrix(0,100,10) -> macierz
+for (j in 1:10){
+sample(dane$V1[sektor==5], 73, replace=F) -> losowe1
+sample(dane$V1[sektor==6], 17, replace=F) -> losowe2
+sample(dane$V1[sektor==7], 10, replace=F) -> losowe3
+c(losowe1, losowe2, losowe3) -> losowe
+losowe -> macierz[,j]
+}
+```
